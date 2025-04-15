@@ -178,15 +178,15 @@
         </div>
     </div>
 
-    <div class="about; text-align: center;" id="about">
-        <h2 style="margin-bottom: 1rem ; text-align: center;">About</h2>
-        <p style="text-align: center;">
+    <div class="about" id="about">
+        <h2>About</h2>
+        <p>
             EmotionVision is a real-time AI app that detects human emotion using deep learning and webcam input.
             <br>
             Built with FastAPI + PyTorch on the backend, it leverages computer vision to understand and react to facial
             expressions — live and instantly.
         </p>
-        <p style="margin-top: 1rem; text-align: center;">
+        <p style="margin-top: 1rem;">
             Created as a next-gen demo of emotion AI. Clean. Fast. Real-time. Built to impress. 🔥
         </p>
     </div>
@@ -208,10 +208,16 @@
             neutral: '😐'
         };
 
+        // Access user's webcam
         navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
             video.srcObject = stream;
+        }).catch((err) => {
+            console.error("Error accessing webcam: ", err);
+            emotionBox.innerText = "Camera Error";
+            emoji.innerText = "⚠️";
         });
 
+        // Continuously capture frames and make predictions
         setInterval(() => {
             const canvas = document.createElement("canvas");
             canvas.width = video.videoWidth;
@@ -223,7 +229,7 @@
                 const formData = new FormData();
                 formData.append("file", blob, "frame.jpg");
 
-                fetch("http://127.0.0.1:8000/predict", {
+                fetch("https://your-backend-url.onrender.com/predict", { // Update with your deployed backend URL
                     method: "POST",
                     body: formData,
                 })
@@ -234,11 +240,12 @@
                         emoji.innerText = emojiMap[emotion] || '😐';
                     })
                     .catch((err) => {
+                        console.error("Prediction error: ", err);
                         emotionBox.innerText = "Error";
                         emoji.innerText = "⚠️";
                     });
             }, "image/jpeg");
-        }, 800);
+        }, 800); // Capture a frame every 800ms
     </script>
 
 </body>
