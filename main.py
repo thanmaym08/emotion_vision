@@ -59,9 +59,6 @@ class_labels = [
     "sad",       # 5
     "surprised"  # 6
 ]
-@app.get("/")
-def read_root():
-    return {"message": "Emotion Detection API is live 👋"}
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):

@@ -229,7 +229,7 @@
                 const formData = new FormData();
                 formData.append("file", blob, "frame.jpg");
 
-                fetch("https://your-backend-url.onrender.com/predict", { // Update with your deployed backend URL
+                fetch("https://emotion-vision.onrender.com/predict/predict", { // Update with your deployed backend URL
                     method: "POST",
                     body: formData,
                 })
