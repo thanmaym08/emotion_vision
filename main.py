@@ -6,6 +6,7 @@ import torch
 import torchvision.transforms as transforms
 import torch.nn as nn
 from efficientnet_pytorch import EfficientNet
+import os  # 🔧 Added to get port from env
 
 app = FastAPI()
 
@@ -30,7 +31,6 @@ class EmotionEfficientNet(nn.Module):
 
 # Initialize and load model
 num_classes = 7
-
 model = EmotionEfficientNet(num_classes)
 
 try:
@@ -49,7 +49,7 @@ transform = transforms.Compose([
                          [0.229, 0.224, 0.225])
 ])
 
-# Class label mapping (make sure this matches your training order!)
+# Class label mapping
 class_labels = [
     "angry",     # 0
     "disgust",   # 1
@@ -71,11 +71,7 @@ async def predict(file: UploadFile = File(...)):
             output = model(img_tensor)
             print("🔍 Logits:", output)
 
-            if output.ndim == 2:
-                pred_idx = torch.argmax(output, dim=1).item()
-            else:
-                pred_idx = output.argmax().item()
-
+            pred_idx = torch.argmax(output, dim=1).item()
             print(f"🎯 Predicted index: {pred_idx}")
 
             label = class_labels[pred_idx] if pred_idx < len(class_labels) else "unknown"
@@ -91,7 +87,8 @@ async def predict(file: UploadFile = File(...)):
             "error": str(e)
         }
 
-# For local test only (optional — not needed on Render)
+# 🔧 Dynamic port binding for Render
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=10000)
+    port = int(os.environ.get("PORT", 8000))  # Render injects this variable
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
