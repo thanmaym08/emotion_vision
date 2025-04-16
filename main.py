@@ -11,18 +11,18 @@ import os
 
 app = FastAPI()
 
-# Enable CORS
+# CORS for any frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins (you can restrict this in production)
+    allow_origins=["*"],  # Change to your frontend URL in prod
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Serve static HTML files (e.g., index.html)
+# Serve static files (HTML)
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
-# Define the model class
+# Define model class
 class EmotionEfficientNet(nn.Module):
     def __init__(self, num_classes):
         super(EmotionEfficientNet, self).__init__()
@@ -36,6 +36,7 @@ class EmotionEfficientNet(nn.Module):
 # Load model
 num_classes = 7
 model = EmotionEfficientNet(num_classes)
+
 try:
     state_dict = torch.load("efficientnet_b4_emotion.pth", map_location="cpu")
     model.load_state_dict(state_dict)
@@ -54,13 +55,8 @@ transform = transforms.Compose([
 
 # Class labels
 class_labels = [
-    "angry",     # 0
-    "disgust",   # 1
-    "fear",      # 2
-    "happy",     # 3
-    "neutral",   # 4
-    "sad",       # 5
-    "surprised"  # 6
+    "angry", "disgust", "fear", "happy",
+    "neutral", "sad", "surprised"
 ]
 
 @app.post("/predict")
@@ -75,7 +71,16 @@ async def predict(file: UploadFile = File(...)):
             pred_idx = torch.argmax(output, dim=1).item()
             label = class_labels[pred_idx] if pred_idx < len(class_labels) else "unknown"
 
-        return {"prediction": pred_idx, "label": label}
+        return {
+            "prediction": pred_idx,
+            "label": label
+        }
 
     except Exception as e:
         return {"error": str(e)}
+
+# Only runs locally, not on Render
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
