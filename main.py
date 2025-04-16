@@ -6,19 +6,24 @@ import torch
 import torchvision.transforms as transforms
 import torch.nn as nn
 from efficientnet_pytorch import EfficientNet
-import os  # 🔧 Added to get port from env
+import os
 
 app = FastAPI()
 
-# Enable CORS for frontend access
+# ✅ Add health check route to prevent 404 on "/"
+@app.get("/")
+async def root():
+    return {"message": "EmotionVision API is running ✅"}
+
+# ✅ Enable CORS (adjust in production)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins (change in prod if needed)
+    allow_origins=["*"],  # You can specify exact origins in production
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Define the model class (must match training setup)
+# ✅ Define the model class
 class EmotionEfficientNet(nn.Module):
     def __init__(self, num_classes):
         super(EmotionEfficientNet, self).__init__()
@@ -29,10 +34,9 @@ class EmotionEfficientNet(nn.Module):
     def forward(self, x):
         return self.model(x)
 
-# Initialize and load model
+# ✅ Load the model
 num_classes = 7
 model = EmotionEfficientNet(num_classes)
-
 try:
     state_dict = torch.load("efficientnet_b4_emotion.pth", map_location="cpu")
     model.load_state_dict(state_dict)
@@ -41,7 +45,7 @@ try:
 except Exception as e:
     print("❌ Failed to load model:", e)
 
-# Image preprocessing
+# ✅ Image preprocessing pipeline
 transform = transforms.Compose([
     transforms.Resize((380, 380)),
     transforms.ToTensor(),
@@ -49,17 +53,12 @@ transform = transforms.Compose([
                          [0.229, 0.224, 0.225])
 ])
 
-# Class label mapping
+# ✅ Label mapping
 class_labels = [
-    "angry",     # 0
-    "disgust",   # 1
-    "fear",      # 2
-    "happy",     # 3
-    "neutral",   # 4
-    "sad",       # 5
-    "surprised"  # 6
+    "angry", "disgust", "fear", "happy", "neutral", "sad", "surprised"
 ]
 
+# ✅ Prediction endpoint
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     try:
@@ -69,11 +68,7 @@ async def predict(file: UploadFile = File(...)):
 
         with torch.no_grad():
             output = model(img_tensor)
-            print("🔍 Logits:", output)
-
             pred_idx = torch.argmax(output, dim=1).item()
-            print(f"🎯 Predicted index: {pred_idx}")
-
             label = class_labels[pred_idx] if pred_idx < len(class_labels) else "unknown"
 
         return {
@@ -87,8 +82,8 @@ async def predict(file: UploadFile = File(...)):
             "error": str(e)
         }
 
-# 🔧 Dynamic port binding for Render
+# ✅ Dynamic port binding (Render uses PORT env variable)
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 8000))  # Render injects this variable
+    port = int(os.environ.get("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port)
