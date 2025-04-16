@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from PIL import Image
 import io
 import torch
@@ -10,20 +11,18 @@ import os
 
 app = FastAPI()
 
-# ✅ Add health check route to prevent 404 on "/"
-@app.get("/")
-async def root():
-    return {"message": "EmotionVision API is running ✅"}
-
-# ✅ Enable CORS (adjust in production)
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # You can specify exact origins in production
+    allow_origins=["*"],  # Allow all origins (you can restrict this in production)
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ✅ Define the model class
+# Serve static HTML files (e.g., index.html)
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
+
+# Define the model class
 class EmotionEfficientNet(nn.Module):
     def __init__(self, num_classes):
         super(EmotionEfficientNet, self).__init__()
@@ -34,7 +33,7 @@ class EmotionEfficientNet(nn.Module):
     def forward(self, x):
         return self.model(x)
 
-# ✅ Load the model
+# Load model
 num_classes = 7
 model = EmotionEfficientNet(num_classes)
 try:
@@ -45,7 +44,7 @@ try:
 except Exception as e:
     print("❌ Failed to load model:", e)
 
-# ✅ Image preprocessing pipeline
+# Image transforms
 transform = transforms.Compose([
     transforms.Resize((380, 380)),
     transforms.ToTensor(),
@@ -53,12 +52,17 @@ transform = transforms.Compose([
                          [0.229, 0.224, 0.225])
 ])
 
-# ✅ Label mapping
+# Class labels
 class_labels = [
-    "angry", "disgust", "fear", "happy", "neutral", "sad", "surprised"
+    "angry",     # 0
+    "disgust",   # 1
+    "fear",      # 2
+    "happy",     # 3
+    "neutral",   # 4
+    "sad",       # 5
+    "surprised"  # 6
 ]
 
-# ✅ Prediction endpoint
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     try:
@@ -71,19 +75,7 @@ async def predict(file: UploadFile = File(...)):
             pred_idx = torch.argmax(output, dim=1).item()
             label = class_labels[pred_idx] if pred_idx < len(class_labels) else "unknown"
 
-        return {
-            "prediction": pred_idx,
-            "label": label
-        }
+        return {"prediction": pred_idx, "label": label}
 
     except Exception as e:
-        print("🚨 Prediction error:", e)
-        return {
-            "error": str(e)
-        }
-
-# ✅ Dynamic port binding (Render uses PORT env variable)
-if __name__ == "__main__":
-    import uvicorn
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port)
+        return {"error": str(e)}
