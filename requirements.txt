@@ -4,3 +4,4 @@ gradio
 torch
 efficientnet_pytorch
 Pillow
+
