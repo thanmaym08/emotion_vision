@@ -163,7 +163,7 @@
         <div class="nav-links">
             <a href="#live">Live</a>
             <a href="#about">About</a>
-            <a href="https://github.com/thanmaym08/emotion_vision" target="_blank">GitHub</a>
+            <a href="https://github.com/your-link" target="_blank">GitHub</a>
         </div>
     </nav>
 
@@ -208,9 +208,7 @@
             neutral: '😐'
         };
 
-        // ⚠️ UPDATE THIS URL to your deployed FastAPI backend
-        const BASE_URL = "https://emotion-vision.onrender.com";
-
+        // Access user's webcam
         navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
             video.srcObject = stream;
         }).catch((err) => {
@@ -219,6 +217,7 @@
             emoji.innerText = "⚠️";
         });
 
+        // Continuously capture frames and make predictions
         setInterval(() => {
             const canvas = document.createElement("canvas");
             canvas.width = video.videoWidth;
@@ -230,28 +229,23 @@
                 const formData = new FormData();
                 formData.append("file", blob, "frame.jpg");
 
-                fetch(`${BASE_URL}/predict`, {
+                fetch("/predict", { // Update with your deployed backend URL
                     method: "POST",
                     body: formData,
                 })
                     .then((res) => res.json())
                     .then((data) => {
-                        if (data.label) {
-                            const emotion = data.label.toLowerCase();
-                            emotionBox.innerText = emotion.charAt(0).toUpperCase() + emotion.slice(1);
-                            emoji.innerText = emojiMap[emotion] || '😐';
-                        } else {
-                            emotionBox.innerText = "⚠️ No Label";
-                            emoji.innerText = '😐';
-                        }
+                        const emotion = data.label.toLowerCase();
+                        emotionBox.innerText = emotion.charAt(0).toUpperCase() + emotion.slice(1);
+                        emoji.innerText = emojiMap[emotion] || '😐';
                     })
                     .catch((err) => {
                         console.error("Prediction error: ", err);
-                        emotionBox.innerText = "⚠️ Error";
+                        emotionBox.innerText = "Error";
                         emoji.innerText = "⚠️";
                     });
             }, "image/jpeg");
-        }, 800);
+        }, 800); // Capture a frame every 800ms
     </script>
 
 </body>

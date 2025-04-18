@@ -1,28 +1,35 @@
+import os
+import io
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from PIL import Image
-import io
 import torch
 import torchvision.transforms as transforms
 import torch.nn as nn
 from efficientnet_pytorch import EfficientNet
-import os
+import uvicorn
 
 app = FastAPI()
 
-# CORS for any frontend
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Change to your frontend URL in prod
+    allow_origins=["*"],  # Replace with frontend URL in production
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Serve static files (HTML)
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+# Mount static files to /static
+app.mount("/static", StaticFiles(directory="static", html=True), name="static")
 
-# Define model class
+# Optional: Serve index.html at root "/"
+@app.get("/")
+async def serve_homepage():
+    return FileResponse("static/index.html")
+
+# Define the model
 class EmotionEfficientNet(nn.Module):
     def __init__(self, num_classes):
         super(EmotionEfficientNet, self).__init__()
@@ -33,7 +40,7 @@ class EmotionEfficientNet(nn.Module):
     def forward(self, x):
         return self.model(x)
 
-# Load model
+# Load the model
 num_classes = 7
 model = EmotionEfficientNet(num_classes)
 
@@ -45,7 +52,7 @@ try:
 except Exception as e:
     print("❌ Failed to load model:", e)
 
-# Image transforms
+# Define image transformation
 transform = transforms.Compose([
     transforms.Resize((380, 380)),
     transforms.ToTensor(),
@@ -59,6 +66,7 @@ class_labels = [
     "neutral", "sad", "surprised"
 ]
 
+# Prediction endpoint
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     try:
@@ -79,8 +87,7 @@ async def predict(file: UploadFile = File(...)):
     except Exception as e:
         return {"error": str(e)}
 
-# Only runs locally, not on Render
+# Run locally only
 if __name__ == "__main__":
-    import uvicorn
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port)
