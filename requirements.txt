@@ -1,7 +1,6 @@
 fastapi
 uvicorn
-pillow
+gradio
 torch
-torchvision
 efficientnet_pytorch
-python-multipart
+Pillow
