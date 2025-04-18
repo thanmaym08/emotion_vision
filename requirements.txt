@@ -1,7 +1,6 @@
 fastapi
 uvicorn
 gradio
-torch
+torch==1.13.1+cpu
 efficientnet_pytorch
 Pillow
-
